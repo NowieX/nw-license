@@ -32,15 +32,26 @@ local function GetBSN_number_SYNC(src)
 	return response[1].bsn
 end
 
+local function get_all_licenses(src)
+	return MySQL.query.await('SELECT `type`, `label` FROM `licenses`')
+end
+
 local function get_licenses(src)
 	local xPlayer = ESX.GetPlayerFromId(src)
-    MySQL.query('SELECT `type` FROM `user_licenses` WHERE `owner` = ?', {
+    local response = MySQL.query.await('SELECT `type` FROM `user_licenses` WHERE `owner` = ?', {
         xPlayer.getIdentifier()
-    }, function(response)
-        if not response then
-            return print("[^1"..GetCurrentResourceName().."]:^3 Could not get the driver license of the player: "..xPlayer".")
-        end
-    end)
+    })
+    return response
+end
+
+local function replace_gender(xPlayer)
+    local gender = xPlayer.get('sex')
+    if gender == "m" then
+		gender = "Man"
+	elseif gender == "w" then
+		gender = "Vrouw"
+	end
+    return gender
 end
 
 AddEventHandler('onResourceStart', function()
@@ -84,14 +95,8 @@ exports.ox_inventory:registerHook('createItem', function(payload)
 	local metadata = payload.metadata
 	local name = xPlayer.getName()
 	local dob = xPlayer.get('dateofbirth')
-	local gender = xPlayer.get('sex')
 	local bsn_number = GetBSN_number_SYNC(src)
-
-	if gender == "m" then
-		gender = "Man"
-	elseif gender == "w" then
-		gender = "Vrouw"
-	end
+    local gender = replace_gender(xPlayer)
 
 	metadata.label = Config.Licenses[1].title
 	metadata.description = ('Naam: %s  \nGeboortedatum: %s  \nGeslacht: %s  \nBSN: %s'):format(name, dob, gender, bsn_number)
@@ -110,19 +115,26 @@ exports.ox_inventory:registerHook('createItem', function(payload)
 	local metadata = payload.metadata
 	local name = xPlayer.getName()
 	local dob = xPlayer.get('dateofbirth')
-	local gender = xPlayer.get('sex')
 	local bsn_number = GetBSN_number_SYNC(src)
     local driving_permit = get_licenses(src)
+    local gender = replace_gender(xPlayer)
+    local all_licenses = get_all_licenses(src)
 
-	if gender == "m" then
-		gender = "Man"
-	elseif gender == "w" then
-		gender = "Vrouw"
-	end
+    local driving_permit_string = ""
+
+    for _, permit in ipairs(driving_permit) do
+        for _, license in ipairs(all_licenses) do
+            if permit.type == "dmv" then break end -- Get rid of the dmv license, that one is only necessary for theory exam
+            if permit.type == license.type then
+                driving_permit_string = driving_permit_string .. " " .. tostring(license.label).."," -- Comma for between the names
+                break
+            end
+        end
+    end
 
 	metadata.label = Config.Licenses[2].title
-	metadata.description = ('Naam: %s  \nGeboortedatum: %s  \nGeslacht: %s  \nBSN: %s  \nRijbewijs: %s'):format(name, dob, gender, bsn_number, driving_permit)
-
+    metadata.description = ('Naam: %s  \nGeboortedatum: %s  \nGeslacht: %s  \nBSN: %s  \nRijbewijstype: %s'):format(name, dob, gender, bsn_number, driving_permit_string)
+    
     return metadata
 end, {
     itemFilter = {
@@ -157,7 +169,7 @@ RegisterNetEvent('nw-license:server:giveLicense', function(data)
     local account_money = xPlayer.getAccount(Config.LicensePayingEnabled.account)
 
 	if not canPurchaseLicense[src] then
-		xPlayer.kick("Caught by nw 📸")
+		xPlayer.kick("Caught by nw-license 📸")
 		SendDiscordMessage(src, Config.Webhooks.message, Config.Webhooks.webhookUrl)
 		return
 	end
@@ -191,9 +203,9 @@ function SendDiscordMessage(src, message, webhookUrl)
     local embedData = {{
         ['title'] = GetCurrentResourceName(),
         ['color'] = 0,
-        -- ['footer'] = {
-        --     ['icon_url'] = "https://media.discordapp.net/attachments/1135317834851958835/1135317941504712735/Ontwerp_zonder_titel_1.png"
-        -- },
+        ['footer'] = {
+            ['icon_url'] = ""
+        },
         ['description'] = message,
         ['fields'] = {
             {

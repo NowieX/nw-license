@@ -1,7 +1,7 @@
 Config = {}
 
 Config.Webhooks = {
-    webhookUrl = "",
+    webhookUrl = "", -- Place webhookurl for discord logging here
     message = "**The player with the information underneath triggered an event from nw-license that he got his license, go check on him fast.**"
 }
 

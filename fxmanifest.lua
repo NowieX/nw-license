@@ -10,6 +10,7 @@ game 'gta5'
 
 dependency {
 	'oxmysql',
+	'ox_inventory',
 	'es_extended'
 }
 
