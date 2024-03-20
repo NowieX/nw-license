@@ -1,8 +1,9 @@
-# nw-license
+nw-license
 Author: NowieX
-For information, contact me on discord: nowiex
 
-This script provides your server with a uniquely identifier script. It places adds a couple of things into your database so every player has a unique identifier, giving the roleplay a more unique experience!
+For inquiries, contact me on Discord: Nowiex
+
+This script enhances your server with a unique identifier system. It adds several elements to your database, ensuring each player has a distinct identifier, thus enhancing the roleplay experience!
 
 ## Dependencies
 - oxmysql -> https://github.com/overextended/oxmysql
