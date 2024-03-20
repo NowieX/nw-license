@@ -1,4 +1,4 @@
-nw-license
+# nw-license
 Author: NowieX
 
 For inquiries, contact me on Discord: Nowiex
