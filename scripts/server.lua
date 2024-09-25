@@ -68,11 +68,13 @@ AddEventHandler('onResourceStart', function()
 end)
 
 RegisterNetEvent('esx:playerLoaded', function(player, xPlayer, isNew)
+    local src = source
 	if isNew then
 		MySQL.update('UPDATE users SET bsn = ? WHERE identifier = ?', {
 			CreateRandomBSN(), xPlayer.getIdentifier()
 		})
 	else
+
 		MySQL.query('SELECT `bsn` FROM `users` WHERE `identifier` = ?', {
 			xPlayer.getIdentifier()
 		}, function(response)
@@ -121,13 +123,15 @@ exports.ox_inventory:registerHook('createItem', function(payload)
     local all_licenses = get_all_licenses(src)
 
     local driving_permit_string = ""
+    local comma = ""
 
     for _, permit in ipairs(driving_permit) do
         for _, license in ipairs(all_licenses) do
             if permit.type == "dmv" then break end -- Get rid of the dmv license, that one is only necessary for theory exam
             if permit.type == license.type then
-                driving_permit_string = driving_permit_string .. " " .. tostring(license.label).."," -- Comma for between the names
-                break
+                driving_permit_string = driving_permit_string .. comma .. tostring(license.label)
+                comma = ", "  -- Update de comma string voor toekomstige iteraties
+                break  -- Omdat we een overeenkomende licentie hebben gevonden, kunnen we uit de binnenste lus breken
             end
         end
     end
@@ -192,8 +196,13 @@ RegisterNetEvent('nw-license:server:giveLicense', function(data)
         return
     end
 
+    for key, value in pairs(data) do
+        print(key, value)
+    end
+
     if isInRange(src) then
         xPlayer.addInventoryItem(data.item, 1)
+        print("Player moet nu item gekregen hebben")
         canPurchaseLicense[src] = false
     end
 end)
